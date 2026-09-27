@@ -496,6 +496,29 @@
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+     /* Fix mobile layout: Stack timer dial and schedule vertically */
+     @media (max-width: 768px) {
+    .top-section, 
+    .timer-container, 
+    .main-content {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    /* Unhide and expand the schedule container */
+    #sequenceContainer, 
+    .sequence-schedule {
+        width: 100% !important;
+        max-width: 360px !important;
+        margin-top: 24px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow-x: visible !important;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -1077,21 +1100,25 @@ function sendDesktopNotification(title, body) {
         }
     });
     pipBtn.addEventListener('click', async () => {
-        
-            if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
-            } else {
-                const stream = pipCanvas.captureStream();
-                pipVideo.srcObject = stream;
-                await pipVideo.play();
-                await pipVideo.requestPictureInPicture();
-            }
-        } catch (err) {
-            alert("Floating window not supported on this browser context.");
+    try {
+        if (document.pictureInPictureElement) {
+            await document.exitPictureInPicture();
+        } else {
+            updatePiPCanvas(timeDisplay.innerText || '00:00');
+            const stream = pipCanvas.captureStream(30);
+            pipVideo.srcObject = stream;
+            pipVideo.muted = true;
+            await pipVideo.play();
+            await pipVideo.requestPictureInPicture();
         }
-    });
+    } catch (err) {
+        console.error(err);
+        alert("Floating window failed: " + err.message);
+    }
+});
 
-    btnNext.addEventListener('click', ...
+
+    
 
     btnNext.addEventListener('click', () => {
         initAudio();
