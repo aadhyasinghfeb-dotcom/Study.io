@@ -561,7 +561,14 @@
         <button class="btn btn-secondary" id="btn-next">
             ⏭ Next Block
         </button>
+    </div>  
+    <!-- Floating PiP Window Elements -->
+    <canvas id="pipCanvas" width="300" height="150" style="display:none;"></canvas>
+    <video id="pipVideo" autoplay muted playsinline style="display:none;"></video>
+    <div style="text-align: center;">
+        <button class="btn btn-secondary btn-small" id="pipBtn" style="margin: 0 auto; padding: 8px 16px;">📌 Floating Mini Timer</button>
     </div>
+    
 
     <!-- Customization Settings -->
     <div class="settings-card">
@@ -678,7 +685,11 @@
     const blockLabel = document.getElementById('block-label');
     const blockLengthText = document.getElementById('block-length-text');
     const sequenceContainer = document.getElementById('sequence-items');
-    
+    const pipCanvas = document.getElementById('pipCanvas');
+const pipCtx = pipCanvas ? pipCanvas.getContext('2d') : null;
+const pipVideo = document.getElementById('pipVideo');
+const pipBtn = document.getElementById('pipBtn');
+
     const taskGoalInput = document.getElementById('task-goal-input');
 
     const statSeqLen = document.getElementById('stat-seq-len');
@@ -946,7 +957,21 @@ function sendDesktopNotification(title, body) {
             sequenceContainer.appendChild(div);
         });
     }
+ function updatePiPCanvas(timeStr) {
+    if (!pipCtx) return;
+    pipCtx.fillStyle = '#0b0f19';
+    pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
+    
+    pipCtx.fillStyle = '#06b6d4';
+    pipCtx.font = 'bold 20px sans-serif';
+    pipCtx.textAlign = 'center';
+    pipCtx.fillText('FOCUS TIMER', pipCanvas.width / 2, 40);
 
+    pipCtx.fillStyle = '#ffffff';
+    pipCtx.font = 'bold 52px sans-serif';
+    pipCtx.fillText(timeStr, pipCanvas.width / 2, 105);
+}
+    
     function updateDisplay() {
         if (!sequence.length) return;
         const currentBlock = sequence[currentBlockIndex];
@@ -957,6 +982,7 @@ function sendDesktopNotification(title, body) {
 
         blockLabel.innerText = currentBlock.name;
         timeDisplay.innerText = timeStr;
+       updatePiPCanvas(timeStr);
         blockLengthText.innerText = taskText !== "" ? taskText : `${Math.round(currentBlock.duration / 60)}m block length`;
 
         document.title = `(${timeStr}) ${currentBlock.name} - Focus Study Timer`;
@@ -1050,6 +1076,22 @@ function sendDesktopNotification(title, body) {
             startTimer();
         }
     });
+    pipBtn.addEventListener('click', async () => {
+        
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else {
+                const stream = pipCanvas.captureStream();
+                pipVideo.srcObject = stream;
+                await pipVideo.play();
+                await pipVideo.requestPictureInPicture();
+            }
+        } catch (err) {
+            alert("Floating window not supported on this browser context.");
+        }
+    });
+
+    btnNext.addEventListener('click', ...
 
     btnNext.addEventListener('click', () => {
         initAudio();
