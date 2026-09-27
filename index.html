@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus & Study Timer Pro</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 30, 46, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-glow: rgba(59, 130, 246, 0.25);
+            --input-bg: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, #1e2640 0%, #0b0f19 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px 16px;
+        }
+
+        .timer-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 28px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px var(--accent-glow);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header Section */
+        .header-title {
+            text-align: center;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            font-weight: 700;
+        }
+
+        /* Subject / Task Goal Box */
+        .task-input-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .task-input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--card-border);
+            color: #ffffff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            outline: none;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .task-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+
+        /* Top Visualization Section */
+        .top-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .dial-container {
+            position: relative;
+            width: 175px;
+            height: 175px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .dial-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.4));
+        }
+
+        .dial-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 8;
+        }
+
+        .dial-progress {
+            fill: none;
+            stroke: url(#cyan-gradient);
+            stroke-width: 8;
+            stroke-dasharray: 440;
+            stroke-dashoffset: 0;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        .dial-center-label {
+            position: absolute;
+            top: 24px;
+            font-size: 0.68rem;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            max-width: 120px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dial-time {
+            position: absolute;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        .dial-sub-text {
+            position: absolute;
+            bottom: 26px;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+        }
+
+        /* Sequence List */
+        .sequence-list {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .sequence-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sequence-list::-webkit-scrollbar-thumb {
+            background: var(--input-bg);
+            border-radius: 4px;
+        }
+
+        .sequence-title {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .seq-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            padding: 7px 10px;
+            border-radius: 10px;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .seq-item span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .seq-item:hover {
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        /* Active Current Interval Style */
+        .seq-item.active-current {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Permanent Completed Green Style */
+        .seq-item.completed-green {
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0.08) 100%) !important;
+            border-color: var(--accent-green) !important;
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+
+        .seq-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            flex-shrink: 0;
+            background-color: #1e293b;
+            border: 1px solid var(--text-muted);
+            color: transparent;
+            transition: all 0.2s ease;
+        }
+
+        /* Permanently style green check icon */
+        .seq-item.completed-green .seq-icon {
+            background-color: var(--accent-green) !important;
+            border-color: var(--accent-green) !important;
+            color: #ffffff !important;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            padding: 12px 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .stat-value {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        /* Controls Section */
+        .controls-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #2563eb 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background-color: var(--input-bg);
+            color: #ffffff;
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            border-radius: 8px;
+            flex: none;
+        }
+
+        /* Settings Card */
+        .settings-card {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option-label {
+            font-size: 0.82rem;
+            color: var(--text-color);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .option-sublabel {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        select {
+            background-color: var(--input-bg);
+            color: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        /* Toggle Switch UI */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 22px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--input-bg);
+            transition: .3s;
+            border-radius: 22px;
+            border: 1px solid var(--card-border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* Progress Scrubber */
+        .scrubber-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .scrubber-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .scrubber-title {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .scrubber-value {
+            font-weight: 700;
+            color: var(--accent-cyan);
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+            height: 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="timer-container">
+    <div class="header-title">⚡ Focus Study Session</div>
+
+    <!-- Subject / Task Goal Box -->
+    <div class="task-input-box">
+        <input type="text" id="task-goal-input" class="task-input" placeholder="🎯 What are you studying? (e.g. Maths Ch. 4)" value="">
+    </div>
+
+    <!-- Visual Top Header -->
+    <div class="top-section">
+        <div class="dial-container">
+            <span class="dial-center-label" id="block-label">FOCUS BLOCK 1</span>
+            <svg class="dial-svg" viewBox="0 0 160 160">
+                <defs>
+                    <linearGradient id="cyan-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#06b6d4" />
+                        <stop offset="100%" stop-color="#3b82f6" />
+                    </linearGradient>
+                </defs>
+                <circle class="dial-bg" cx="80" cy="80" r="70"></circle>
+                <circle class="dial-progress" id="dial-ring" cx="80" cy="80" r="70"></circle>
+            </svg>
+            <div class="dial-time" id="time-display">01:30:00</div>
+            <div class="dial-sub-text" id="block-length-text">90m block length</div>
+        </div>
+
+        <div class="sequence-list">
+            <div class="sequence-title">Sequence Schedule</div>
+            <div id="sequence-items"></div>
+        </div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-label">Total Time</div>
+            <div class="stat-value" id="stat-seq-len">300 min</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Mode</div>
+            <div class="stat-value" id="stat-current-type">Focus</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Overall</div>
+            <div class="stat-value" id="stat-pct">0.0%</div>
+        </div>
+    </div>
+
+    <!-- Main Action Controls -->
+    <div class="controls-row">
+        <button class="btn btn-primary" id="btn-toggle">
+            <span id="toggle-icon">▶</span> <span id="toggle-text">Resume</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-next">
+            ⏭ Next Block
+        </button>
+    </div>
+
+    <!-- Customization Settings -->
+    <div class="settings-card">
+        <!-- Target Duration Customization (3 to 12 Hours) -->
+        <div class="option-group">
+            <div style="display:flex; flex-direction:column;">
+                <span class="option-label">🎯 Session Duration</span>
+                <span class="option-sublabel">Auto-calculates 90m & 20m blocks</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <select id="target-hours-select">
+                    <option value="3">3 Hours</option>
+                    <option value="4">4 Hours</option>
+                    <option value="5" selected>5 Hours</option>
+                    <option value="6">6 Hours</option>
+                    <option value="7">7 Hours</option>
+                    <option value="8">8 Hours</option>
+                    <option value="9">9 Hours</option>
+                    <option value="10">10 Hours</option>
+                    <option value="11">11 Hours</option>
+                    <option value="12">12 Hours</option>
+                </select>
+                <button class="btn btn-secondary btn-small" id="btn-generate-seq">🔄 Apply</button>
+                <button class="btn btn-secondary btn-small" id="btn-reset-session" title="Clear Memory & Reset Session">🧹 Reset</button>
+            </div>
+        </div>
+
+        <!-- Desktop System Popup Notifications -->
+        <div class="option-group">
+            <div style="display:flex; flex-direction:column;">
+                <span class="option-label">💻 Desktop Alerts</span>
+                <span class="option-sublabel">Popup when minimized</span>
+            </div>
+            <button class="btn btn-secondary btn-small" id="btn-request-notif">🔔 Enable</button>
+        </div>
+
+        <!-- Sound Alert Toggle -->
+        <div class="option-group">
+            <span class="option-label">🔔 Sound Alert</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="sound-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Alarm Tone Picker -->
+        <div class="option-group">
+            <span class="option-label">🎵 Alarm Tone</span>
+            <select id="sound-type-select">
+                <option value="alarm">Loud Alarm Beep</option>
+                <option value="chime">Soft Chime Tone</option>
+                <option value="watch">Digital Watch Beep</option>
+                <option value="bell">Gentle Bell</option>
+            </select>
+        </div>
+
+        <!-- Sound Duration Control -->
+        <div class="option-group">
+            <div style="display:flex; flex-direction:column;">
+                <span class="option-label">⏱ Sound Duration</span>
+                <span class="option-sublabel">Ringing length on completion</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <select id="sound-duration-select">
+                    <option value="1">1 Sec</option>
+                    <option value="2">2 Secs</option>
+                    <option value="3" selected>3 Secs</option>
+                    <option value="5">5 Secs</option>
+                    <option value="10">10 Secs</option>
+                </select>
+                <button class="btn btn-secondary btn-small" id="btn-test-sound">▶ Test</button>
+            </div>
+        </div>
+
+        <!-- Simulation Speed -->
+        <div class="option-group">
+            <span class="option-label">🚀 Simulation Speed</span>
+            <select id="speed-select">
+                <option value="1">Real-time (1x)</option>
+                <option value="10">Fast (10x)</option>
+                <option value="60">Ultra Fast (60x)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Progress Scrubbing Control -->
+    <div class="scrubber-group">
+        <div class="scrubber-header">
+            <span class="scrubber-title">Scrub Block Progress</span>
+            <span class="scrubber-value" id="scrubber-pct">0% done</span>
+        </div>
+        <input type="range" id="scrubber" min="0" max="100" value="0">
+    </div>
+</div>
+
+<script>
+    let sequence = [];
+    let currentBlockIndex = 0;
+    let completedStatus = [];
+    let elapsedInBlock = 0;
+    let isRunning = false;
+    let speed = 1;
+    let timerInterval = null;
+
+    const CIRCLE_RADIUS = 70;
+    const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+    // DOM Elements
+    const dialRing = document.getElementById('dial-ring');
+    const timeDisplay = document.getElementById('time-display');
+    const blockLabel = document.getElementById('block-label');
+    const blockLengthText = document.getElementById('block-length-text');
+    const sequenceContainer = document.getElementById('sequence-items');
+    
+    const taskGoalInput = document.getElementById('task-goal-input');
+
+    const statSeqLen = document.getElementById('stat-seq-len');
+    const statCurrentType = document.getElementById('stat-current-type');
+    const statPct = document.getElementById('stat-pct');
+
+    const btnToggle = document.getElementById('btn-toggle');
+    const toggleIcon = document.getElementById('toggle-icon');
+    const toggleText = document.getElementById('toggle-text');
+    const btnNext = document.getElementById('btn-next');
+    
+    const targetHoursSelect = document.getElementById('target-hours-select');
+    const btnGenerateSeq = document.getElementById('btn-generate-seq');
+    const btnResetSession = document.getElementById('btn-reset-session');
+    const btnRequestNotif = document.getElementById('btn-request-notif');
+
+    const soundToggle = document.getElementById('sound-toggle');
+    const soundTypeSelect = document.getElementById('sound-type-select');
+    const soundDurationSelect = document.getElementById('sound-duration-select');
+    const btnTestSound = document.getElementById('btn-test-sound');
+    
+    const speedSelect = document.getElementById('speed-select');
+    const scrubber = document.getElementById('scrubber');
+    const scrubberPct = document.getElementById('scrubber-pct');
+
+    // LocalStorage State Management
+    function saveState() {
+        const state = {
+            sequence,
+            currentBlockIndex,
+            completedStatus,
+            elapsedInBlock,
+            targetHours: targetHoursSelect.value,
+            taskGoal: taskGoalInput.value,
+            soundEnabled: soundToggle.checked,
+            soundType: soundTypeSelect.value,
+            soundDuration: soundDurationSelect.value
+        };
+        localStorage.setItem('focusTimerPro_State', JSON.stringify(state));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem('focusTimerPro_State');
+        if (!saved) return false;
+
+        try {
+            const state = JSON.parse(saved);
+            if (!state.sequence || !state.sequence.length) return false;
+
+            sequence = state.sequence;
+            currentBlockIndex = state.currentBlockIndex || 0;
+            completedStatus = state.completedStatus || new Array(sequence.length).fill(false);
+            elapsedInBlock = state.elapsedInBlock || 0;
+
+            if (state.targetHours) targetHoursSelect.value = state.targetHours;
+            if (state.taskGoal !== undefined) taskGoalInput.value = state.taskGoal;
+            if (state.soundEnabled !== undefined) soundToggle.checked = state.soundEnabled;
+            if (state.soundType) soundTypeSelect.value = state.soundType;
+            if (state.soundDuration) soundDurationSelect.value = state.soundDuration;
+
+            init();
+            return true;
+        } catch(e) {
+            console.error("Failed to load saved state", e);
+            return false;
+        }
+    }
+
+    // Desktop Popup Notification Function
+    function sendDesktopNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, {
+                body: body,
+                icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png"
+            });
+        }
+    }
+
+    // Generate Dynamic Schedule based on target hours
+    function generateSchedule(targetHours) {
+        pauseTimer();
+        let targetMinutes = targetHours * 60;
+        let remainingMinutes = targetMinutes;
+        let generatedSeq = [];
+        let focusCount = 1;
+        let breakCount = 1;
+
+        while (remainingMinutes > 0) {
+            if (remainingMinutes >= 90) {
+                generatedSeq.push({ name: `Focus Block ${focusCount++}`, duration: 90 * 60, type: "focus" });
+                remainingMinutes -= 90;
+            } else if (remainingMinutes > 20) {
+                generatedSeq.push({ name: `Final Focus`, duration: remainingMinutes * 60, type: "focus" });
+                remainingMinutes = 0;
+                break;
+            } else {
+                generatedSeq.push({ name: `Final Focus`, duration: remainingMinutes * 60, type: "focus" });
+                remainingMinutes = 0;
+                break;
+            }
+
+            if (remainingMinutes >= 20) {
+                generatedSeq.push({ name: `Short Break ${breakCount++}`, duration: 20 * 60, type: "break" });
+                remainingMinutes -= 20;
+            }
+        }
+
+        sequence = generatedSeq;
+        completedStatus = new Array(sequence.length).fill(false);
+        currentBlockIndex = 0;
+        elapsedInBlock = 0;
+
+        init();
+        saveState();
+    }
+
+    // Audio Engine
+    let audioCtx = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playTone(freq, duration, type = 'sine', volume = 0.5) {
+        if (!audioCtx) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch(e) {
+            console.log(e);
+        }
+    }
+
+    function playCustomAlarm() {
+        if (!soundToggle.checked) return;
+        initAudio();
+
+        const toneType = soundTypeSelect.value;
+        const totalDurationMs = parseInt(soundDurationSelect.value, 10) * 1000;
+        const intervalTime = 300;
+        let elapsed = 0;
+
+        const alarmLoop = setInterval(() => {
+            if (elapsed >= totalDurationMs) {
+                clearInterval(alarmLoop);
+                return;
+            }
+
+            if (toneType === 'alarm') {
+                playTone(880, 0.12, 'square', 0.6);
+                setTimeout(() => playTone(1046.5, 0.15, 'square', 0.6), 140);
+            } else if (toneType === 'chime') {
+                playTone(523.25, 0.25, 'sine', 0.5);
+                setTimeout(() => playTone(659.25, 0.25, 'sine', 0.5), 150);
+            } else if (toneType === 'watch') {
+                playTone(2093, 0.08, 'triangle', 0.7);
+                setTimeout(() => playTone(2093, 0.08, 'triangle', 0.7), 100);
+            } else if (toneType === 'bell') {
+                playTone(440, 0.4, 'sine', 0.6);
+            }
+
+            elapsed += intervalTime;
+        }, intervalTime);
+    }
+
+    function playClickSound() {
+        if (!soundToggle.checked) return;
+        initAudio();
+        playTone(600, 0.05, 'sine', 0.3);
+    }
+
+    // Initialize Widget
+    function init() {
+        dialRing.style.strokeDasharray = `${CIRCLE_CIRCUMFERENCE}`;
+        const totalSeqSecs = sequence.reduce((acc, curr) => acc + curr.duration, 0);
+        statSeqLen.innerText = `${Math.round(totalSeqSecs / 60)} min`;
+
+        if ("Notification" in window && Notification.permission === "granted") {
+            btnRequestNotif.innerText = "✓ Active";
+            btnRequestNotif.style.borderColor = "var(--accent-green)";
+            btnRequestNotif.style.color = "var(--accent-green)";
+        }
+
+        renderSequenceList();
+        updateDisplay();
+    }
+
+    function selectInterval(index) {
+        currentBlockIndex = index;
+        elapsedInBlock = 0;
+        playClickSound();
+        renderSequenceList();
+        updateDisplay();
+        saveState();
+    }
+
+    function renderSequenceList() {
+        sequenceContainer.innerHTML = '';
+        sequence.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'seq-item';
+            
+            if (idx === currentBlockIndex) {
+                div.classList.add('active-current');
+            }
+            
+            if (completedStatus[idx]) {
+                div.classList.add('completed-green');
+            }
+
+            div.innerHTML = `
+                <div class="seq-icon">✓</div>
+                <span>${item.name}</span>
+            `;
+
+            div.addEventListener('click', () => selectInterval(idx));
+            sequenceContainer.appendChild(div);
+        });
+    }
+
+    function updateDisplay() {
+        if (!sequence.length) return;
+        const currentBlock = sequence[currentBlockIndex];
+        const remainingSeconds = Math.max(0, currentBlock.duration - elapsedInBlock);
+
+        const timeStr = formatTime(remainingSeconds);
+        const taskText = taskGoalInput.value.trim();
+
+        blockLabel.innerText = currentBlock.name;
+        timeDisplay.innerText = timeStr;
+        blockLengthText.innerText = taskText !== "" ? taskText : `${Math.round(currentBlock.duration / 60)}m block length`;
+
+        document.title = `(${timeStr}) ${currentBlock.name} - Focus Study Timer`;
+
+        const blockProgressRatio = currentBlock.duration > 0 ? (elapsedInBlock / currentBlock.duration) : 1;
+        const strokeOffset = CIRCLE_CIRCUMFERENCE * blockProgressRatio;
+        dialRing.style.strokeDashoffset = strokeOffset;
+
+        const scrubPctVal = Math.round(blockProgressRatio * 100);
+        scrubber.value = scrubPctVal;
+        scrubberPct.innerText = `${scrubPctVal}% done`;
+
+        statCurrentType.innerText = currentBlock.type === 'break' ? 'Short Br.' : 'Focus';
+        
+        let completedSecs = 0;
+        for (let i = 0; i < sequence.length; i++) {
+            if (completedStatus[i]) {
+                completedSecs += sequence[i].duration;
+            }
+        }
+        if (!completedStatus[currentBlockIndex]) {
+            completedSecs += elapsedInBlock;
+        }
+
+        const totalSecs = sequence.reduce((acc, curr) => acc + curr.duration, 0) || 1;
+        const overallPct = Math.min(100, ((completedSecs / totalSecs) * 100)).toFixed(1);
+        statPct.innerText = `${overallPct}%`;
+    }
+
+    function formatTime(seconds) {
+        const hrs = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        
+        if (hrs > 0) {
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (isRunning) return;
+        isRunning = true;
+        toggleIcon.innerText = '❚❚';
+        toggleText.innerText = 'Pause';
+        initAudio();
+
+        timerInterval = setInterval(() => {
+            const currentBlock = sequence[currentBlockIndex];
+            elapsedInBlock += (1 * speed);
+
+            if (elapsedInBlock >= currentBlock.duration) {
+                completedStatus[currentBlockIndex] = true;
+                elapsedInBlock = 0;
+                
+                playCustomAlarm();
+
+                const taskName = taskGoalInput.value.trim();
+                const taskInfo = taskName ? ` [Goal: ${taskName}]` : '';
+                sendDesktopNotification("🎉 Block Completed!", `${currentBlock.name} Finished!${taskInfo}`);
+
+                if (currentBlockIndex < sequence.length - 1) {
+                    currentBlockIndex++;
+                    renderSequenceList();
+                } else {
+                    pauseTimer();
+                    renderSequenceList();
+                    sendDesktopNotification("🏆 Session Finished!", "Congratulations on completing your entire study session!");
+                    setTimeout(() => alert('🎉 Study Session Complete! Excellent work!'), 300);
+                }
+            }
+            updateDisplay();
+            saveState();
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        isRunning = false;
+        toggleIcon.innerText = '▶';
+        toggleText.innerText = 'Resume';
+        clearInterval(timerInterval);
+        saveState();
+    }
+
+    // Event Listeners
+    btnToggle.addEventListener('click', () => {
+        initAudio();
+        if (isRunning) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
+    });
+
+    btnNext.addEventListener('click', () => {
+        initAudio();
+        completedStatus[currentBlockIndex] = true;
+        
+        if (currentBlockIndex < sequence.length - 1) {
+            currentBlockIndex++;
+            elapsedInBlock = 0;
+        }
+        renderSequenceList();
+        updateDisplay();
+        saveState();
+    });
+
+    btnGenerateSeq.addEventListener('click', () => {
+        const hours = parseInt(targetHoursSelect.value, 10);
+        generateSchedule(hours);
+    });
+
+    btnResetSession.addEventListener('click', () => {
+        if (confirm("Are you sure you want to reset your study session progress?")) {
+            localStorage.removeItem('focusTimerPro_State');
+            generateSchedule(parseInt(targetHoursSelect.value, 10));
+        }
+    });
+
+    btnRequestNotif.addEventListener('click', () => {
+        if ("Notification" in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    btnRequestNotif.innerText = "✓ Active";
+                    btnRequestNotif.style.borderColor = "var(--accent-green)";
+                    btnRequestNotif.style.color = "var(--accent-green)";
+                    sendDesktopNotification("Notifications Enabled", "You will now receive desktop alerts for block completion.");
+                }
+            });
+        }
+    });
+
+    taskGoalInput.addEventListener('input', () => {
+        updateDisplay();
+        saveState();
+    });
+
+    soundToggle.addEventListener('change', saveState);
+    soundTypeSelect.addEventListener('change', saveState);
+    soundDurationSelect.addEventListener('change', saveState);
+
+    btnTestSound.addEventListener('click', () => {
+        playCustomAlarm();
+    });
+
+    speedSelect.addEventListener('change', (e) => {
+        speed = parseFloat(e.target.value);
+    });
+
+    scrubber.addEventListener('input', (e) => {
+        const pct = parseFloat(e.target.value) / 100;
+        const currentBlock = sequence[currentBlockIndex];
+        elapsedInBlock = Math.round(currentBlock.duration * pct);
+        
+        if (pct >= 1) {
+            completedStatus[currentBlockIndex] = true;
+            renderSequenceList();
+        }
+        updateDisplay();
+        saveState();
+    });
+
+    window.addEventListener('click', () => initAudio(), { once: true });
+
+    // Initial Load - Load from LocalStorage if available, otherwise default to 5 Hours
+    if (!loadState()) {
+        generateSchedule(5);
+    }
+</script>
+
+</body>
+</html>
