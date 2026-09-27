@@ -589,16 +589,36 @@
         </div>
 
         <!-- Desktop System Popup Notifications -->
-        <div class="option-group">
-            <div style="display:flex; flex-direction:column; flex:1;">
-                <span class="option-label">💻 Desktop Alerts</span>
-                <span class="option-sublabel">Popup alerts & system desktop</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <button class="btn btn-secondary btn-small" id="btn-request-notif">🔔 Enable</button>
-                <button class="btn btn-secondary btn-small" id="btn-test-notif">🧪 Test Pop-up</button>
-            </div>
-        </div>
+     // Register Service Worker for mobile background pop-ups
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+}
+
+function sendDesktopNotification(title, body) {
+    // 1. In-page popup box
+    popupTitle.innerText = title;
+    popupBody.innerText = body;
+    popupAlert.style.display = 'block';
+    setTimeout(() => {
+        popupAlert.style.display = 'none';
+    }, 5000);
+
+    // 2. Android system notification banner
+    if ("Notification" in window && Notification.permission === "granted") {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png",
+                    vibrate: [300, 100, 300]
+                });
+            });
+        } else {
+            new Notification(title, { body: body });
+        }
+    }
+}
+
 
         <!-- Sound Alert Toggle -->
         <div class="option-group">
