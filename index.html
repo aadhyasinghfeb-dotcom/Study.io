@@ -750,29 +750,42 @@
             return false;
         }
     }
+// Register Service Worker for mobile background pop-ups
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+}
 
-    // Popup Notification Function (Works both on screen and desktop system)
-    function sendDesktopNotification(title, body) {
-        // 1. Screen Popup Fallback (Guaranteed to work inside browser)
-        popupTitle.innerText = title;
-        popupBody.innerText = body;
+function sendDesktopNotification(title, body) {
+    // 1. In-page popup alert
+    if (typeof popupTitle !== 'undefined' && popupTitle) popupTitle.innerText = title;
+    if (typeof popupBody !== 'undefined' && popupBody) popupBody.innerText = body;
+    if (typeof popupAlert !== 'undefined' && popupAlert) {
         popupAlert.style.display = 'block';
-        setTimeout(() => {
-            popupAlert.style.display = 'none';
-        }, 5000);
+        setTimeout(function() { popupAlert.style.display = 'none'; }, 5000);
+    }
 
-        // 2. Browser Desktop System Notification
-        if ("Notification" in window && Notification.permission === "granted") {
-            try {
-                new Notification(title, {
+    // 2. Audio alert fallback
+    try {
+        let alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+        alarmSound.play().catch(function(e) { console.log(e); });
+    } catch(e) {}
+
+    // 3. Android / Mobile system notification banner
+    if ("Notification" in window && Notification.permission === "granted") {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification(title, {
                     body: body,
-                    icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png"
+                    icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png",
+                    vibrate: [300, 100, 300]
                 });
-            } catch(e) {
-                console.log("Desktop notification system busy:", e);
-            }
+            });
+        } else {
+            new Notification(title, { body: body });
         }
     }
+}
+    
 
     // Generate Dynamic Brain Rhythm Schedule (3 Focus Blocks for 5 Hours)
     function generateSchedule(targetHours) {
