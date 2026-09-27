@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -473,9 +473,36 @@
             height: 6px;
             border-radius: 3px;
         }
+
+        /* Pop-up Overlay Notification UI */
+        .custom-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1e293b;
+            border: 2px solid var(--accent-cyan);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 9999;
+            display: none;
+            max-width: 320px;
+            animation: slideIn 0.3s forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+
+<div id="popup-alert" class="custom-popup">
+    <div style="font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;" id="popup-title">🔔 Notification</div>
+    <div style="font-size: 0.85rem;" id="popup-body">This is a test notification!</div>
+</div>
 
 <div class="timer-container">
     <div class="header-title">⚡ Focus Study Session</div>
@@ -541,7 +568,7 @@
         <div class="option-group">
             <div style="display:flex; flex-direction:column; flex:1;">
                 <span class="option-label">🎯 Session Duration</span>
-                <span class="option-sublabel">Auto-calculates 90m & 20m blocks</span>
+                <span class="option-sublabel">Brain rhythm: 90m focus / 20m break</span>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
                 <select id="target-hours-select">
@@ -565,7 +592,7 @@
         <div class="option-group">
             <div style="display:flex; flex-direction:column; flex:1;">
                 <span class="option-label">💻 Desktop Alerts</span>
-                <span class="option-sublabel">Popup when minimized</span>
+                <span class="option-sublabel">Popup alerts & system desktop</span>
             </div>
             <div style="display:flex; align-items:center; gap:4px;">
                 <button class="btn btn-secondary btn-small" id="btn-request-notif">🔔 Enable</button>
@@ -668,6 +695,10 @@
     const btnRequestNotif = document.getElementById('btn-request-notif');
     const btnTestNotif = document.getElementById('btn-test-notif');
 
+    const popupAlert = document.getElementById('popup-alert');
+    const popupTitle = document.getElementById('popup-title');
+    const popupBody = document.getElementById('popup-body');
+
     const soundToggle = document.getElementById('sound-toggle');
     const soundTypeSelect = document.getElementById('sound-type-select');
     const soundDurationSelect = document.getElementById('sound-duration-select');
@@ -720,32 +751,30 @@
         }
     }
 
-    // Desktop Popup Notification Function
+    // Popup Notification Function (Works both on screen and desktop system)
     function sendDesktopNotification(title, body) {
-        if (!("Notification" in window)) {
-            alert("Desktop Notifications are not supported in this browser.");
-            return;
-        }
+        // 1. Screen Popup Fallback (Guaranteed to work inside browser)
+        popupTitle.innerText = title;
+        popupBody.innerText = body;
+        popupAlert.style.display = 'block';
+        setTimeout(() => {
+            popupAlert.style.display = 'none';
+        }, 5000);
 
-        if (Notification.permission === "granted") {
-            new Notification(title, {
-                body: body,
-                icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png",
-                requireInteraction: true
-            });
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    new Notification(title, {
-                        body: body,
-                        icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png"
-                    });
-                }
-            });
+        // 2. Browser Desktop System Notification
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                new Notification(title, {
+                    body: body,
+                    icon: "https://cdn-icons-png.flaticon.com/512/2928/2928724.png"
+                });
+            } catch(e) {
+                console.log("Desktop notification system busy:", e);
+            }
         }
     }
 
-    // Generate Dynamic Schedule based on target hours
+    // Generate Dynamic Brain Rhythm Schedule (3 Focus Blocks for 5 Hours)
     function generateSchedule(targetHours) {
         pauseTimer();
         let targetMinutes = targetHours * 60;
@@ -759,7 +788,7 @@
                 generatedSeq.push({ name: `Focus Block ${focusCount++}`, duration: 90 * 60, type: "focus" });
                 remainingMinutes -= 90;
             } else if (remainingMinutes > 20) {
-                generatedSeq.push({ name: `Final Focus`, duration: remainingMinutes * 60, type: "focus" });
+                generatedSeq.push({ name: `Focus Block ${focusCount++}`, duration: remainingMinutes * 60, type: "focus" });
                 remainingMinutes = 0;
                 break;
             } else {
@@ -1040,14 +1069,18 @@
                     btnRequestNotif.innerText = "✓ Active";
                     btnRequestNotif.style.borderColor = "var(--accent-green)";
                     btnRequestNotif.style.color = "var(--accent-green)";
-                    sendDesktopNotification("Notifications Enabled", "You will now receive desktop alerts for block completion.");
+                    sendDesktopNotification("Notifications Enabled", "You will now receive popup alerts for block completion.");
+                } else {
+                    sendDesktopNotification("Desktop Alert", "Popup alerts ready in browser.");
                 }
             });
+        } else {
+            sendDesktopNotification("Desktop Alert", "Popup alerts active inside browser window.");
         }
     });
 
     btnTestNotif.addEventListener('click', () => {
-        sendDesktopNotification("🔔 Test Notification", "If you see this, pop-up alerts are working!");
+        sendDesktopNotification("🧪 Test Pop-up Notification", "Success! Pop-up notifications are functioning properly.");
     });
 
     taskGoalInput.addEventListener('input', () => {
